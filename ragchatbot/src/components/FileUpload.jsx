@@ -1,12 +1,35 @@
 import { useState } from "react";
-import { Upload, FileText } from "lucide-react"; // assuming lucide-react
-import { useTheme } from "../context/ThemeContext"; // adjust the path
+import { Upload, FileText } from "lucide-react";
+import { useTheme } from "../context/ThemeContext"; // adjust path
 
-// File Upload Component
 const FileUpload = () => {
   const theme = useTheme();
   const [dragActive, setDragActive] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+
+  const handleFileUpload = async (files) => {
+    for (let file of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const data = await response.json();
+        setUploadedFiles((prev) => [...prev, data.filename]);
+      } catch (error) {
+        console.error("Upload error:", error);
+        alert(`❌ Failed to upload ${file.name}`);
+      }
+    }
+  };
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -23,16 +46,14 @@ const FileUpload = () => {
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const files = Array.from(e.dataTransfer.files);
-      setUploadedFiles((prev) => [...prev, ...files.map((f) => f.name)]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileUpload(Array.from(e.dataTransfer.files));
     }
   };
 
   const handleFileInput = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const files = Array.from(e.target.files);
-      setUploadedFiles((prev) => [...prev, ...files.map((f) => f.name)]);
+    if (e.target.files && e.target.files.length > 0) {
+      handleFileUpload(Array.from(e.target.files));
     }
   };
 
